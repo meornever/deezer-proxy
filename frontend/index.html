@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Vibely 🎶 - Deezer Charts</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: sans-serif; text-align: center; background: linear-gradient(to right, #f83600, #f9d423); color: #fff; margin: 0; padding: 0; }
+    .container { padding: 20px; }
+    .track-card { background: rgba(0, 0, 0, 0.2); padding: 20px; margin: 20px auto; max-width: 90%; border-radius: 20px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); }
+    button { padding: 12px 20px; margin: 10px; font-size: 16px; border: none; border-radius: 10px; cursor: pointer; width: 40%; }
+    .like { background-color: #00e676; color: black; }
+    .dislike { background-color: #ff1744; color: white; }
+    .banger { background-color: gold; color: black; font-weight: bold; }
+    audio { width: 100%; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Vibely 🎶</h1>
+    <p>Swipe tes morceaux préférés des charts Deezer !</p>
+    <div id="track" class="track-card">
+      <p id="track-title">Chargement...</p>
+      <audio id="audio" controls autoplay></audio>
+      <div>
+        <button class="like" onclick="vote(true)">J'aime 👍</button>
+        <button class="dislike" onclick="vote(false)">Je passe 👎</button>
+        <button class="banger" onclick="vote(true, true)">⭐ Banger !</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    let tracks = [];
+    let currentIndex = 0;
+
+    async function fetchTracks() {
+      const playlistId = '3155776842'; // Top France Deezer
+      const apiUrl = '/api/deezer/playlist?id=' + playlistId;
+      try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+        tracks = data.tracks.data;
+        loadTrack();
+      } catch (error) {
+        document.getElementById("track-title").textContent = "Erreur de chargement.";
+      }
+    }
+
+    function loadTrack() {
+      const track = tracks[currentIndex];
+      if (!track) {
+        document.getElementById("track-title").textContent = "Fin de la playlist !";
+        document.getElementById("audio").style.display = "none";
+        return;
+      }
+      document.getElementById("track-title").textContent = `${track.artist.name} - ${track.title}`;
+      document.getElementById("audio").src = track.preview;
+    }
+
+    function vote(liked, isBanger = false) {
+      const track = tracks[currentIndex];
+      if (!track) return;
+
+      fetch('/api/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trackId: track.id,
+          title: track.title,
+          artist: track.artist.name,
+          liked,
+          banger: isBanger,
+          timestamp: new Date().toISOString()
+        })
+      }).then(() => {
+        currentIndex++;
+        loadTrack();
+      });
+    }
+
+    fetchTracks();
+  </script>
+</body>
+</html>
